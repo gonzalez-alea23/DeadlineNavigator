@@ -3,12 +3,60 @@ name: Run Tracker Automation
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
-  build:
+  build_and_deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Run a test print
-        run: echo "Hello! The tracker automation engine is successfully awake."
+      - name: Create Webpage Dashboard File
+        run: |
+          mkdir -p public
+          cat << 'EOF' > public/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Student Assignment Tracker</title>
+              <style>
+                  body { font-family: sans-serif; background-color: #f4f7f6; padding: 40px; display: flex; justify-content: center; }
+                  .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 500px; text-align: center; }
+                  h1 { color: #333; }
+                  .status { color: #4CAF50; font-weight: bold; margin-top: 20px; font-size: 18px; }
+              </style>
+          </head>
+          <body>
+              <div class="card">
+                  <h1>📚 Student Assignment Tracker</h1>
+                  <p class="status">🟢 Automation Connected Successfully!</p>
+                  <p>Next Step: We will feed real deadline data arrays into this template via the cloud runner.</p>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Website Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

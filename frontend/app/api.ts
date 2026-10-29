@@ -1,3 +1,4 @@
+import { supabase } from "./supabaseClient";
 export type Assignment = {
   id: number;
   title: string;
@@ -162,109 +163,119 @@ export const authAPI = {
 };
 
 export const assignmentAPI = {
+  // 1. GET ALL ASSIGNMENTS (With automatic sorting by closest deadline!)
   async getAll(): Promise<Assignment[]> {
     const userId = localStorage.getItem("userId");
     if (!userId) {
       throw new Error("User not logged in");
     }
-    const response = await fetch(`${API_BASE_URL}/assignments?user_id=${userId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch assignments: ${response.status}`);
+    const { data, error } = await supabase
+      .from("assignments")
+      .select("*")
+      // Only get assignments belonging to the logged-in student
+      .eq("user_id", userId) 
+      // Teacher Requirement: Sort them automatically so closest deadlines are at the top!
+      .order("due_date", { ascending: true });
+
+    if (error) {
+      throw new Error(`Failed to fetch assignments: ${error.message}`);
     }
 
-    return response.json();
+    return (data || []) as unknown as Assignment[];
   },
 
+  // 2. CREATE A NEW ASSIGNMENT
   async create(payload: AssignmentCreatePayload): Promise<Assignment> {
-    const response = await fetch(`${API_BASE_URL}/assignments`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    const userId = localStorage.getItem("userId");
+    
+    const { data, error } = await supabase
+      .from("assignments")
+      .insert([
+        {
+          title: payload.title,
+          class_name: payload.course_name || "General",
+          due_date: payload.deadline,
+          is_completed: false,
+          user_id: userId
+        }
+      ])
+      .select()
+      .single();
 
-    if (!response.ok) {
-      throw new Error(await parseApiError(response));
+    if (error) {
+      throw new Error(`Failed to create assignment: ${error.message}`);
     }
 
-    return response.json();
+    return data as unknown as Assignment;
   },
 
+  // 3. GET A SINGLE ASSIGNMENT BY ID
   async getById(id: number): Promise<Assignment> {
-    const response = await fetch(`${API_BASE_URL}/assignments/${id}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
+    const { data, error } = await supabase
+      .from("assignments")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (!response.ok) {
-      throw new Error(await parseApiError(response));
+    if (error) {
+      throw new Error(`Failed to get assignment: ${error.message}`);
     }
 
-    return response.json();
+    return data as unknown as Assignment;
   },
 
-  async updateAssignment(
-    id: number,
-    payload: AssignmentUpdatePayload,
-  ): Promise<Assignment> {
-    const response = await fetch(`${API_BASE_URL}/assignments/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+  // 4. UPDATE AN ASSIGNMENT (Editing title, date, etc.)
+  async updateAssignment(id: number, payload: AssignmentUpdatePayload): Promise<Assignment> {
+    const { data, error } = await supabase
+      .from("assignments")
+      .update({
+        title: payload.title,
+        class_name: payload.course_name,
+        due_date: payload.deadline
+      })
+      .eq("id", id)
+      .select()
+      .single();
 
-    if (!response.ok) {
-      throw new Error(await parseApiError(response));
+    if (error) {
+      throw new Error(`Failed to update assignment: ${error.message}`);
     }
 
-    return response.json();
+    return data as unknown as Assignment;
   },
 
-  async updateStatus(
-    id: number,
-    status: Assignment["status"],
-  ): Promise<Assignment> {
-    const response = await fetch(`${API_BASE_URL}/assignments/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ status }),
-    });
+  // 5. UPDATE STATUS (Checking / Unchecking the task box)
+  async updateStatus(id: number, status: Assignment["status"]): Promise<Assignment> {
+    const completedStates = ["COMPLETED", "DONE"];
+    const isCompleted = completedStates.includes(status.toUpperCase());
 
-    if (!response.ok) {
-      throw new Error(await parseApiError(response));
+    const { data, error } = await supabase
+      .from("assignments")
+      .update({ is_completed: isCompleted })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update status: ${error.message}`);
     }
 
-    return response.json();
+    return data as unknown as Assignment;
   },
 
+  // 6. DELETE AN ASSIGNMENT
   async deleteAssignment(id: number): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE_URL}/assignments/${id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const { error } = await supabase
+      .from("assignments")
+      .delete()
+      .eq("id", id);
 
-    if (!response.ok) {
-      throw new Error(await parseApiError(response));
+    if (error) {
+      throw new Error(`Failed to delete assignment: ${error.message}`);
     }
 
-    return response.json();
+    return { message: "Assignment deleted successfully" };
   },
 };
 

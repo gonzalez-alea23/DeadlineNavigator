@@ -557,29 +557,7 @@ export default function TaskCalendar() {
                   </button>
                 </div>
               </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={handleConnectGoogleCalendar}
-                  disabled={calendarActionLoading}
-                  className="px-3 py-1.5 border border-blue-200 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition bg-white disabled:opacity-60"
-                >
-                  Connect Google Calendar
-                </button>
-                <button
-                  onClick={handleSyncGoogleCalendar}
-                  disabled={calendarActionLoading}
-                  className="px-3 py-1.5 border border-emerald-200 rounded-lg text-sm text-emerald-600 hover:bg-emerald-50 transition bg-white disabled:opacity-60"
-                >
-                  Sync Tasks
-                </button>
-                <button
-                  onClick={handleDisconnectGoogleCalendar}
-                  disabled={calendarActionLoading}
-                  className="px-3 py-1.5 border border-red-200 rounded-lg text-sm text-red-600 hover:bg-red-50 transition bg-white disabled:opacity-60"
-                >
-                  Disconnect
-                </button>
+              
                 {/* Link Google Calendar */}
                 <a
                   href="https://calendar.google.com/"

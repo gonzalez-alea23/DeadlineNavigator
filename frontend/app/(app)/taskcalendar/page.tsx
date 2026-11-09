@@ -196,6 +196,57 @@ export default function TaskCalendar() {
   const [calendarErrorMessage, setCalendarErrorMessage] = useState("");
   const [calendarActionLoading, setCalendarActionLoading] = useState(false);
   const [updatingStatusIds, setUpdatingStatusIds] = useState<number[]>([]);
+  
+    // Fetch assignments from Supabase and group them into the calendar matrix format
+  useEffect(() => {
+    async function loadTasksFromCloud() {
+      try {
+        const userId = getCurrentUserId();
+        if (!userId) return;
+
+        // 1. Grab your entries from your Supabase client wrapper
+        const assignments = await assignmentAPI.getAll();
+        
+        // 2. Format them cleanly into the YYYY-MM-DD grouping template
+        const groupedTasks: Record<string, Task[]> = {};
+        
+        // Ensure assignments is handled as an array safely
+        const dataArray = Array.isArray(assignments) ? assignments : [assignments];
+
+        dataArray.forEach((item: any) => {
+          // Fallback handles both template and custom database columns
+          const rawDate = item.deadline || item.due_date;
+          if (!rawDate) return;
+
+          // Normalizes database timestamp fields into pure YYYY-MM-DD keys
+          const dateKey = rawDate.split("T")[0];
+
+          if (!groupedTasks[dateKey]) {
+            groupedTasks[dateKey] = [];
+          }
+
+          // Maps your Supabase column cells back to the frontend visual layout values
+          groupedTasks[dateKey].push({
+            id: item.id,
+            title: item.title,
+            subject: item.class_name || "General",
+            priority: item.priority === "HIGH" ? 3 : item.priority === "MEDIUM" ? 2 : 1,
+            status: item.is_completed ? "COMPLETED" : "PENDING",
+            category: "university",
+            deadline: dateKey
+          } as unknown as Task);
+        });
+
+        // 3. Update the grid display instantly
+        setTasksByDate(groupedTasks);
+      } catch (err) {
+        console.error("Calendar database link failure:", err);
+        setCalendarErrorMessage("Failed to populate calendar grid rows.");
+      }
+    }
+
+    loadTasksFromCloud();
+  }, [currentMonth, currentYear]);
 
   const matrix = getMonthMatrix(currentYear, currentMonth);
 

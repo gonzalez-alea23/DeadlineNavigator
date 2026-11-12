@@ -991,6 +991,5 @@ export default function TaskCalendar() {
           )}
         </div>
       </div>
-    </div>
   );
 }

@@ -1,4 +1,8 @@
-import { supabase } from "../supabaseClient";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://supabase.co";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_F741doSA8PHu0NMUJj8MSw_rSf7QEHu";
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export type Assignment = {
   id: number;
   title: string;

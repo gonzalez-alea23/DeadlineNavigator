@@ -1,6 +1,8 @@
-name: Run Tracker Automation
+name: Deploy Next.js Assignment Tracker
 
 on:
+  push:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -22,32 +24,21 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Create Webpage Dashboard File
-        run: |
-          mkdir -p public
-          cat << 'EOF' > public/index.html
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Student Assignment Tracker</title>
-              <style>
-                  body { font-family: sans-serif; background-color: #f4f7f6; padding: 40px; display: flex; justify-content: center; }
-                  .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 500px; text-align: center; }
-                  h1 { color: #333; }
-                  .status { color: #4CAF50; font-weight: bold; margin-top: 20px; font-size: 18px; }
-              </style>
-          </head>
-          <body>
-              <div class="card">
-                  <h1>📚 Student Assignment Tracker</h1>
-                  <p class="status">🟢 Automation Connected Successfully!</p>
-                  <p>Next Step: We will feed real deadline data arrays into this template via the cloud runner.</p>
-              </div>
-          </body>
-          </html>
-          EOF
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build Next.js application
+        working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_F741doSA8PHu0NMUJj8MSw_rSf7QEHu
+        run: npm run build
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
@@ -55,7 +46,7 @@ jobs:
       - name: Upload Website Artifacts
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './public'
+          path: './frontend/out'
 
       - name: Deploy to GitHub Pages
         id: deployment
